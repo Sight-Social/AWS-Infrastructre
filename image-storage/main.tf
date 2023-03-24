@@ -27,7 +27,7 @@ resource "aws_s3_bucket_cors_configuration" "example" {
 
   cors_rule {
     allowed_headers = ["*"]
-    allowed_methods = ["PUT", "POST"]
+    allowed_methods = ["PUT", "POST", "GET"]
     allowed_origins = ["https://s3-website-test.hashicorp.com", "http://localhost:3001"]
     expose_headers  = ["ETag"]
     max_age_seconds = 3000
@@ -41,5 +41,40 @@ resource "aws_s3_bucket_cors_configuration" "example" {
 
 resource "aws_s3_bucket_acl" "example" {
   bucket = aws_s3_bucket.sight_images_348234723742.id
-  acl    = "private"
+  acl    = "public-read"
 }
+
+resource "aws_s3_bucket_public_access_block" "example" {
+  bucket = aws_s3_bucket.sight_images_348234723742.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+
+resource "aws_s3_bucket_policy" "allow_public_images_read" {
+  bucket = aws_s3_bucket.sight_images_348234723742.id
+  policy = data.aws_iam_policy_document.allow_public_images_read.json
+}
+
+data "aws_iam_policy_document" "allow_public_images_read" {
+  statement {
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+
+    resources = [
+      aws_s3_bucket.sight_images_348234723742.arn,
+      "${aws_s3_bucket.sight_images_348234723742.arn}/*",
+    ]
+  }
+}
+
